@@ -32,7 +32,7 @@ namespace SpiderSolitaire
             if (Game.Last().Count > 0)
                 moveCollection.Add(new Move() { weight = 0, srcColumn = -1, destColumn = -1, cardNumber = -1, interimMove = true} );
 
-            for (int j = 0; j < Game.Count - 2; j++)
+            for (int j = 0; j < Game.Count - 1; j++)
             {
                 for (int i = Game[j].Count -1; i >= 0; i--)
                 {
@@ -40,7 +40,7 @@ namespace SpiderSolitaire
                         if (!Game[j][i].canPickup(Game[j][i + 1]))
                             break;
 
-                    for (int l = 0; l < Game.Count - 2; l++)
+                    for (int l = 0; l < Game.Count - 1; l++)
                     {
                         if (Game[l].Count == 0 || Game[j][i].Stackable(Game[l].Last()))
                         {
@@ -64,42 +64,24 @@ namespace SpiderSolitaire
         private static Tuple<int, bool> WeighMove(IList<List<Card>> Game, int src, int dest, int srcDepth )
         {
             int _weight = 0;
-            bool interimMove = true;
             if (srcDepth > 0 && !Game[src][srcDepth - 1].Shown)
             {
-                interimMove = false;
+                //reveals something new - this is a high priority move
+                return Tuple.Create<int, bool>(50, false);
             }
             // low quality move - move to an empty column from a stacked position
             if (srcDepth > 0 && Game[src][srcDepth].Stackable(Game[src][srcDepth - 1]))
+                _weight = 1;
+            // clears a spot - highest priority move
+            else if (srcDepth == 0 && Game[dest].Count > 0)
+                _weight = 45;
+            // almost certainly pointless move - moving from and empty colum to an empty column
+            else if (srcDepth == 0 && Game[dest].Count == 0)
                 _weight = 0;
-            // clears a spot - highest priority move - interim move because it reveals nothing new on the board
-            if (srcDepth == 0 && Game[dest].Count > 0)
-                _weight = 8;
-            // Moving to an empty column - not an ideal move
-            else if (Game[dest].Count == 0)
-            {
-                if (Game[src][srcDepth - 1].Shown)
-                    _weight = 1;
-                else
-                    _weight = 2;
-            }
-            else if (Game[src][srcDepth - 1].Shown)
-            {
-                // already stacked - reveals nothing new
-                if (Game[src][srcDepth].Suit == Game[src][srcDepth - 1].Suit)
-                    _weight = 3;
-                else
-                    _weight = 4;
-            }
             else
-            {
-                if (Game[src][srcDepth].Suit == Game[dest].Last().Suit)
-                    _weight = 6;
-                else
-                    _weight = 5;
-            }
+                _weight = (Game[src].Count - srcDepth) + Game[dest].Count;
 
-            return Tuple.Create<int, bool>(_weight, interimMove);
+            return Tuple.Create<int, bool>(_weight, true);
         }
 
         public IList<List<Card>> ApplyMove(IList<List<Card>> game)
@@ -112,6 +94,7 @@ namespace SpiderSolitaire
                 {
                     game[i].Add(game.Last().Last());
                     game.Last().RemoveAt(game.Last().Count - 1);
+                    game[i].Last().Shown = true;
                 }
                 return game;
             }
@@ -123,11 +106,8 @@ namespace SpiderSolitaire
                 numMoved++;
             }
 
-            while (numMoved > 0)
-            {
+            for (int i = 0; i < numMoved; i++)
                 game[srcColumn].RemoveAt(game[srcColumn].Count - 1);
-                numMoved--;
-            }
 
             if (!this.interimMove)
                 game[srcColumn].Last().Shown = true;
@@ -147,24 +127,42 @@ namespace SpiderSolitaire
                 }
                 return game;
             }
-            for (int i = game[destColumn].Count - numMoved - 1; i < game[destColumn].Count - 1; i++)
+            for (int i = game[destColumn].Count - numMoved; i < game[destColumn].Count; i++)
                 game[srcColumn].Add(game[destColumn][i]);
 
             for (int i = 0; i < numMoved; i++)
                 game[destColumn].RemoveAt(game[destColumn].Count - 1);
 
-            return restoreSets(game);
+            return game;
         }
 
         internal IList<List<Card>> removeSets(IList<List<Card>> game, int column)
         {
-            int stack = 0;
-            while (game[column].Last().Value == stack && stack < 13)
-                stack++;
-            if (stack == 13)
+            bool stack = true;
+            int depth = game[column].Count - 1;
+            int _suit = game[column].Last().Suit;
+            if (depth >= 12)
             {
-                suitRemoved = game[column].Last().Suit;
-                game[column].RemoveRange(game[column].Count - 13, 13);
+                for (int i = 0; i < 13; i++)
+                {
+                    if (game[column][depth - i].Value == i && game[column][depth - i].Shown && game[column][depth - i].Suit == _suit)
+                    {
+                        stack = true;
+                    }
+                    else
+                    {
+                        stack = false;
+                        break;
+                    }
+                }
+
+                if (stack)
+                {
+                    suitRemoved = game[column].Last().Suit;
+                    game[column].RemoveRange(game[column].Count - 13, 13);
+                    if (game[column].Count > 0 )
+                        game[column].Last().Shown = true;
+                }
             }
 
             return game;

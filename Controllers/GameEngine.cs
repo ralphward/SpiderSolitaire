@@ -22,11 +22,14 @@ namespace SpiderSolitaire
             cards.Shuffle();
             gm = new Game(cards, new Dictionary<string,bool>());
             gm.Uncover();
-            if (gm.Solve(new List<Move>()) == null)
+            if (gm.Solve())
             {
-                Console.WriteLine("Couldn't solve it!");
+                Console.WriteLine("Solved!");
+                
             }
-            Console.WriteLine("Solved!");
+            else
+                Console.WriteLine("Couldn't solve it!");
+
         }
 
         private void GenerateCards()

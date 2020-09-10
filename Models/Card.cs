@@ -5,11 +5,11 @@ namespace SpiderSolitaire
 {
     public class Card : IEquatable<Card>
     {
-        internal int Value;
+        public int Value;
 
-        internal int Suit;
+        public int Suit;
 
-        internal bool Shown;
+        public bool Shown;
 
         public bool Equals([AllowNull] Card other)
         {

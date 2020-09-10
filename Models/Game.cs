@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -10,6 +11,7 @@ namespace SpiderSolitaire
     {
         internal IList<List<Card>> GameCollection;
         internal IDictionary<string, bool> GameStates;
+        internal List<Move> currentMoves;
 
         internal bool isSolved
         {
@@ -28,6 +30,7 @@ namespace SpiderSolitaire
             GameCollection = new List<List<Card>>();
             GameStates = gameStates;
             List<Card> offStack = new List<Card>();
+            currentMoves = new List<Move>();
 
             int[] stackNum = {6, 6, 6, 6, 5, 5, 5, 5, 5, 5};
 
@@ -45,7 +48,7 @@ namespace SpiderSolitaire
             }
             for (int i = cardNum; i < sortedCards.Count; i++)
             {
-                offStack.Add(sortedCards[cardNum]);
+                offStack.Add(sortedCards[i]);
             }
             GameCollection.Add(offStack);
         }
@@ -59,40 +62,54 @@ namespace SpiderSolitaire
             GameCollection.Last().Last().Shown = false;
         }
 
-        internal List<Move> Solve(List<Move> currentMoves)
+        internal bool Solve()
         {
-            Console.WriteLine(currentMoves.Count);
             var possMoves = Move.FindMoves(GameCollection);
-            if (possMoves.Count == 0)
+            foreach (var move in possMoves)
             {
-                // no more legal moves - check if we've won here and return true if we have!
-                return currentMoves;
-            }
-            else
-            {
-                foreach (var move in possMoves)
+                currentMoves.Add(move);
+                GameCollection = move.ApplyMove(GameCollection);
+                this.DisplayDetails("Applied: ", move, GameCollection);
+                if (!this.DuplicateState(GameCollection))
                 {
-                    currentMoves.Add(move);
-                    GameCollection = move.ApplyMove(GameCollection);
-
-                    if (!this.DuplicateState(GameCollection))
-                    {
-                        if (move.interimMove)
-                            this.StoreState(GameCollection);
-                        Solve(currentMoves);
-                    }
-
-                    if (isSolved)
-                        return currentMoves;
-
-                    GameCollection = move.ReverseMove(GameCollection);
-                    currentMoves.RemoveAt(currentMoves.Count - 1);
+                    if (move.interimMove)
+                        this.StoreState(GameCollection);
+                    if (this.Solve())
+                        return true;
                 }
-                
-                return currentMoves;
-            }
 
+                if (isSolved)
+                    return true;
+
+                GameCollection = move.ReverseMove(GameCollection);
+                currentMoves.RemoveAt(currentMoves.Count - 1);
+            }
+            return isSolved;
         }
+
+        private void DisplayDetails(String action, Move move, IList<List<Card>> gameCollection)
+        {
+            Console.WriteLine(action + move.cardNumber + " from source " + move.srcColumn + " to " + move.destColumn);
+
+            int max = 0;
+            for (int i = 0; i < gameCollection.Count - 1; i++)
+                max = gameCollection[i].Count > max ? gameCollection[i].Count : max;
+
+            for (int j = 0; j < max; j++)
+            {
+                for (int i = 0; i < gameCollection.Count - 1; i++)
+                {
+                    if (gameCollection[i].Count <= j)
+                        Console.Write("\t");
+                    else if (gameCollection[i][j].Shown)
+                        Console.Write("\t" + gameCollection[i][j].Value);
+                    else if (!gameCollection[i][j].Shown)
+                        Console.Write("\t-");
+                }
+                Console.WriteLine();
+            }
+        }
+        
 
         private void StoreState(IList<List<Card>> gameCollection)
         {
