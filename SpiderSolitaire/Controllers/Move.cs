@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Xml.Serialization;
+
 
 namespace SpiderSolitaire
 {
-    class Move
+    public class Move
     {
         // roughly how good the move is
         internal int weight;

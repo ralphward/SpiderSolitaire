@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace SpiderSolitaire
 {
     public class Card : IEquatable<Card>
+
     {
         public int Value;
 
