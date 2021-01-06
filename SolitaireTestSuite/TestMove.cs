@@ -27,6 +27,24 @@ namespace SolitaireTestSuite
             return c;
         }
 
+        public List<List<Card>> generatePlayableGame()
+        {
+            List<List<Card>> c = new List<List<Card>>();
+            c.Add(fillStack(6, nc(10)));
+            c.Add(fillStack(6, nc(10)));
+            c.Add(fillStack(6, nc(10)));
+            c.Add(fillStack(6, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(5, nc(10)));
+            c.Add(fillStack(0, null));
+
+            return c;
+        }
+
         public List<Card> fillStack(int stacksize, Card visibleCard)
         {
             List<Card> c = new List<Card>();
