@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace SpiderSolitaire
 {
-    class Game
+    public class Game
     {
         internal IList<List<Card>> GameCollection;
         internal IDictionary<string, bool> GameStates;
-        internal List<Move> currentMoves;
+        public List<Move> currentMoves;
+        internal int depth;
 
         internal bool isSolved
         {
@@ -31,6 +31,7 @@ namespace SpiderSolitaire
             GameStates = gameStates;
             List<Card> offStack = new List<Card>();
             currentMoves = new List<Move>();
+            depth = 500;
 
             int[] stackNum = {6, 6, 6, 6, 5, 5, 5, 5, 5, 5};
 
@@ -62,32 +63,48 @@ namespace SpiderSolitaire
             GameCollection.Last().Last().Shown = false;
         }
 
-        internal bool Solve()
+        internal bool Solve(bool doInterimMoves = false)
         {
             var possMoves = Move.FindMoves(GameCollection);
-            foreach (var move in possMoves)
+            if (currentMoves.Count < depth)
             {
-                currentMoves.Add(move);
-                GameCollection = move.ApplyMove(GameCollection);
-                this.DisplayDetails("Applied: ", move, GameCollection);
-                if (!this.DuplicateState(GameCollection))
+               foreach (var move in possMoves)
                 {
-                    if (move.interimMove)
-                        this.StoreState(GameCollection);
-                    if (this.Solve())
-                        return true;
+                    if (move.interimMove == false || doInterimMoves == true)
+                    { 
+                        currentMoves.Add(move);
+                        GameCollection = move.ApplyMove(GameCollection);
+                        if (GameEngine.InvalidState(GameCollection))
+                        {
+                            break;
+                        }
+
+                        Game.DisplayDetails("Applied: ", move, GameCollection);
+                        if (!this.DuplicateState(GameCollection))
+                        {
+                            if (move.interimMove)
+                                this.StoreState(GameCollection);
+                            if (this.Solve())
+                                return true;
+                        }
+
+                        if (isSolved)
+                            return true;
+
+                        //Game.DisplayDetails("Pre reverse apply: ", move, GameCollection);
+                        GameCollection = move.ReverseMove(GameCollection);
+                        //Game.DisplayDetails("Reversed move: ", move, GameCollection);
+                        currentMoves.RemoveAt(currentMoves.Count - 1);
+                    }
                 }
-
-                if (isSolved)
-                    return true;
-
-                GameCollection = move.ReverseMove(GameCollection);
-                currentMoves.RemoveAt(currentMoves.Count - 1);
+            } else
+            {
+                Console.WriteLine("too deep! backing up");
             }
             return isSolved;
         }
 
-        private void DisplayDetails(String action, Move move, IList<List<Card>> gameCollection)
+        public static void DisplayDetails(String action, Move move, IList<List<Card>> gameCollection)
         {
             Console.WriteLine(action + move.cardNumber + " from source " + move.srcColumn + " to " + move.destColumn);
 

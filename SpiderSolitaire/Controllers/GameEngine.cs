@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.ExceptionServices;
 
 namespace SpiderSolitaire
 {
@@ -20,15 +21,12 @@ namespace SpiderSolitaire
         {
             GenerateCards();
             cards.Shuffle();
-            gm = new Game(cards, new Dictionary<string,bool>());
+            gm = new Game(cards, new Dictionary<string, bool>());
             gm.Uncover();
             if (gm.Solve())
-            {
-                Console.WriteLine("Solved!");
-                
-            }
+                Console.WriteLine("Solved in " + gm.currentMoves.Count);
             else
-                Console.WriteLine("Couldn't solve it!");
+                Console.WriteLine("Unable to solve without interim moves!");
 
         }
 
@@ -45,6 +43,23 @@ namespace SpiderSolitaire
                     }
                 }
             }
+        }
+
+        public static bool InvalidState(IList<List<Card>> gameCollection)
+        {
+            int total = 0;
+            int card_total = 0;
+            foreach (var lst in gameCollection) { 
+                foreach (var card in lst) {
+                    total += card.Value;
+                    card_total++;
+                }
+            }
+            if (total % 78 != 0)
+                return true;
+            if (card_total % 13 != 0)
+                return true;
+            return false;
         }
     }
 

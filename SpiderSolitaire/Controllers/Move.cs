@@ -8,29 +8,29 @@ namespace SpiderSolitaire
     public class Move
     {
         // roughly how good the move is
-        internal int weight;
+        public int weight;
 
         // column a card is coming from, -1 for a deal
-        internal int srcColumn;
-        internal int destColumn;
+        public int srcColumn;
+        public int destColumn;
 
         // The index of the card in the source column
-        internal int cardNumber;
+        public int cardNumber;
 
         // boolean showing if a new card was revealed on this move
-        internal bool interimMove;
+        public bool interimMove;
 
         // number of cards moved
-        private int numMoved;
+        public int numMoved;
 
         // number representing the suit of the cards removed. -1 if no suit removed
-        private int suitRemoved;
+        public int suitRemoved;
 
         public static IList<Move> FindMoves(IList<List<Card>> Game)
         {
             IList<Move> moveCollection = new List<Move>();
             if (Game.Last().Count > 0)
-                moveCollection.Add(new Move() { weight = 0, srcColumn = -1, destColumn = -1, cardNumber = -1, interimMove = true} );
+                moveCollection.Add(new Move() { weight = 2, srcColumn = -1, destColumn = -1, cardNumber = -1, interimMove = false} );
 
             for (int j = 0; j < Game.Count - 1; j++)
             {
@@ -67,19 +67,25 @@ namespace SpiderSolitaire
             if (srcDepth > 0 && !Game[src][srcDepth - 1].Shown)
             {
                 //reveals something new - this is a high priority move
-                return Tuple.Create<int, bool>(50, false);
+                return Tuple.Create<int, bool>(150, false);
             }
             // low quality move - move to an empty column from a stacked position
             if (srcDepth > 0 && Game[src][srcDepth].Stackable(Game[src][srcDepth - 1]))
                 _weight = 1;
             // clears a spot - highest priority move
             else if (srcDepth == 0 && Game[dest].Count > 0)
-                _weight = 45;
+                _weight = 155;
             // almost certainly pointless move - moving from and empty colum to an empty column
             else if (srcDepth == 0 && Game[dest].Count == 0)
                 _weight = 0;
+            // Moves a card and reveals one that isn't stackable
+            else if (srcDepth > 0 && (Game[src][srcDepth].Stackable(Game[src][srcDepth - 1])) == false)
+            {
+                _weight = (Game[src].Count - srcDepth) + Game[dest].Count + 100;
+                return Tuple.Create<int, bool>(_weight, false);
+            }
             else
-                _weight = (Game[src].Count - srcDepth) + Game[dest].Count;
+                _weight = 1;
 
             return Tuple.Create<int, bool>(_weight, true);
         }
@@ -115,7 +121,7 @@ namespace SpiderSolitaire
             return removeSets(game, destColumn);
         }
 
-        internal IList<List<Card>> ReverseMove(IList<List<Card>> game)
+        public IList<List<Card>> ReverseMove(IList<List<Card>> game)
         {
             game = restoreSets(game);
             if (srcColumn == -1)
@@ -171,7 +177,7 @@ namespace SpiderSolitaire
         internal IList<List<Card>> restoreSets(IList<List<Card>> game)
         {
             if (suitRemoved > -1)
-                for (int i = 0; i < 14; i++)
+                for (int i = 12; i >= 0; i--)
                     game[destColumn].Add(new Card() { Value = i, Shown = true, Suit = suitRemoved });
             return game;
         }
